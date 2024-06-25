@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>PLT</title>
+  <script src="jspsych/jspsych.js"></script>
+  <script src="jspsych/plugin-html-keyboard-response.js"></script>
+  <script src="jspsych/plugin-call-function.js"></script>
+  <script src="jspsych/plugin-preload.js"></script>
+  <link href="jspsych/jspsych.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body></body>
+<script>
+  const jsPsych = initJsPsych();
+  // var debug = false;
+  // stimulus sequence here
+  const leftimgList = ['balloon1.png','balloon1.png','bowtie1.png','balloon1.png','balloon1.png','bowtie1.png','bowtie1.png','balloon1.png','bowtie1.png','balloon1.png','bowtie1.png','balloon1.png','balloon1.png',
+        'bowtie2.png','scrunchie1.png','hourglass1.png',
+        'scrunchie2.png','snowglobe1.png','hourglass2.png','snowglobe2.png','rug1.png','rug2.png',
+        'easteregg1.png','coatrack1.png','easteregg2.png','cushion1.png','coatrack2.png','cushion2.png',
+        'necktie1.png','necktie2.png','coffeemug1.png','chessboard1.png','coffeemug2.png','balloon2.png','chessboard2.png'];
+  const rightimgList = ['bowtie1.png','bowtie1.png','balloon1.png','bowtie1.png','bowtie1.png','balloon1.png','balloon1.png','bowtie1.png','balloon1.png','bowtie1.png','balloon1.png','bowtie1.png','bowtie1.png',
+        'bowtie2.png','scrunchie1.png','hourglass1.png',
+        'scrunchie2.png','snowglobe1.png','hourglass2.png','snowglobe2.png','rug1.png','rug2.png',
+        'easteregg1.png','coatrack1.png','easteregg2.png','cushion1.png','coatrack2.png','cushion2.png',
+        'necktie1.png','necktie2.png','coffeemug1.png','chessboard1.png','coffeemug2.png','balloon2.png','chessboard2.png'];
+  const leftoutcomeList = [1,0,1,1,1,2,0,0,2,0,0,0,0,1,0,2,0,0,0,0,1,1,0,1,1,1,2,0];
+  const rightoutcomeList = [0,2,0,0,0,0,1,1,0,1,1,1,2,0,1,0,1,1,1,2,0,0,2,0,0,0,0,1];
+  
+  let instructions = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: '<p>INSTRUCTION.</p>'
+  };
+  
+  function make_timeline() {
+    
+    var fixation = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: '<div style="font-size:60px">+</div>',
+      choices: "NO_KEYS",
+      trial_duration: 800,
+      data:{
+        trialphase: "fixation",
+      }
+      // trial_duration: function() {
+      //   return 500 + Math.random() * 300;
+      // }
+    };
+    
+    function draw_stimulus(msg, leftimage, rightimage) {
+      return `<svg width="600" height="600" style="text-align: center">
+            <image href="${leftimage}" x="10" y="200" height="200" width="200"/>
+            <text x="300" y="327" font-size="60" text-anchor="middle" fill="black">${msg}</text>
+            <image href="${rightimage}" x="390" y="200" height="200" width="200"/>
+            </svg>`;
+      }
+      
+    function select_stimulus(data, leftimage, rightimage) {
+      if (jsPsych.pluginAPI.compareKeys(data.response, 'arrowleft')){
+        rec_posx = 0
+      }else if (jsPsych.pluginAPI.compareKeys(data.response, 'arrowright')) {
+        rec_posx = 380
+      } else {
+        rec_posx = 10000
+      }
+      return `<svg width="600" height="600" style="text-align: center">
+          <image href="selectRec.png" x=${rec_posx} y="190" height="220" width="220"/>
+          <image href="${leftimage}" x="10" y="200" height="200" width="200"/>
+          <image href="${rightimage}" x="390" y="200" height="200" width="200"/>
+          </svg>`;
+      }
+        
+    function outcome(data, leftimage, rightimage) {
+      let points = data.pointThisTrial;
+      if (points == 1 || points == 2) {
+        pointsSlow = ""
+        outcome_colour = "green"
+      } else if (points == 0) {
+        pointsSlow = ""
+        outcome_colour = "black"
+      } else {
+        outcome_colour = "black"
+      }
+      if (jsPsych.pluginAPI.compareKeys(data.response, 'arrowleft')){
+        rec_posx = 0
+      }else if (jsPsych.pluginAPI.compareKeys(data.response, 'arrowright')) {
+        rec_posx = 380
+      } else {
+        rec_posx = 10000
+        points = "Too"
+        pointsSlow = "slow!"
+      }
+      return `<svg width="600" height="600" style="text-align: center">
+        <image href="selectRec.png" x=${rec_posx} y="190" height="220" width="220"/>
+        <image href="${leftimage}" x="10" y="200" height="200" width="200"/>
+        <text x="300" y="325" font-size="50" text-anchor="middle" fill=${outcome_colour}>${points}</text>
+        <text x="300" y="365" font-size="50" text-anchor="middle" fill=${outcome_colour}>${pointsSlow}</text>
+        <image href="${rightimage}" x="390" y="200" height="200" width="200"/>
+        </svg>`;
+      }
+          
+    function make_bandit_trial(leftimage, rightimage, leftoutcome, rightoutcome) {
+      return {
+        timeline: [fixation, {
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: function() {
+            let html = draw_stimulus("+", leftimage, rightimage);
+            return html;
+          },
+          data: {
+            trialphase: "stimuli"
+          },
+          trial_duration: 800,
+          choices: "NO_KEYS",
+        },{
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: function() {
+            let html = draw_stimulus("?", leftimage, rightimage);
+            return html;
+          },
+          data: {
+            leftimage: leftimage,
+            rightimage: rightimage,
+            leftoutcome: leftoutcome,
+            rightoutcome: rightoutcome,
+            trialphase: "response",
+          },
+          trial_duration: 2500,
+          response_ends_trial: true,
+          choices: ["ArrowLeft", "ArrowRight"],
+          on_finish: function(data) {
+            console.log(data.response);
+            if (data.response == undefined) {
+              data.responseMissing = true;
+            } else {
+              data.responseMissing = false;
+            }
+            if (data.response == "arrowleft") {
+              data.pointThisTrial = data.leftoutcome
+            } else if (data.response == "arrowright") {
+              data.pointThisTrial = data.rightoutcome
+            }
+          }
+        },{
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: function() {
+            let last_trial = jsPsych.data.get().last(1).trials[0]
+            return select_stimulus(last_trial, leftimage, rightimage)
+          },
+          data: {
+            trialphase: "stimuliselection"
+          },
+          trial_duration: function() {
+            let last_trial = jsPsych.data.get().last(1).trials[0]
+            if (last_trial.response == undefined) {
+              return 0
+            } else {
+              return 800
+            }
+          },
+          choices: "NO_KEYS",
+        },{
+          type: jsPsychHtmlKeyboardResponse,
+          stimulus: function() {
+            let choice_trial = jsPsych.data.get().last(2).trials[0]
+            return outcome(choice_trial, leftimage, rightimage);
+          },
+          data: {
+            trialphase: "feedback"
+          },
+          trial_duration: 1000,
+          choices: "NO_KEYS",
+        },
+        ]
+      }
+    }
+          
+      let bandit_block = [];
+      let trialNumber = 0;
+      for (let i = 0; i < leftimgList.length; i++){
+        let leftimage = leftimgList.shift();
+        let rightimage = rightimgList.shift();
+        let leftoutcome = leftoutcomeList.shift();
+        let rightoutcome = rightoutcomeList.shift();
+        bandit_block.push(make_bandit_trial(leftimage, rightimage, leftoutcome, rightoutcome));
+        trialNumber ++;
+        if (trialNumber % 13 ==0) {
+          bandit_block.push({
+            type: jsPsychHtmlKeyboardResponse,
+            choices: ['s'],
+            stimulus: "New block! Press s to continue.",
+            data: {
+              trialphase: "break"
+            },
+          })
+        }
+      }
+      
+      var images = ['balloon1.png','bowtie1.png','bowtie2.png','scrunchie1.png','hourglass1.png',
+        'scrunchie2.png','snowglobe1.png','hourglass2.png','snowglobe2.png','rug1.png','rug2.png',
+        'easteregg1.png','coatrack1.png','easteregg2.png','cushion1.png','coatrack2.png','cushion2.png',
+        'necktie1.png','necktie2.png','coffeemug1.png','chessboard1.png','coffeemug2.png','balloon2.png','chessboard2.png'];
+      var preload = {
+        type: jsPsychPreload,
+        images: images,
+      }
+      
+      let tl = [preload, instructions];
+      tl.push({ timeline: bandit_block });
+      tl.push({
+        type: jsPsychCallFunction,
+        func: function () {
+          jsPsych.data.get().localSave('csv', 'PLT_data.csv');
+        }
+      })
+      tl.push({
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: "You have finished the task. Great job!",
+      });
+      return tl;
+  }
+        
+  let tl = make_timeline();
+        
+    // Run the experiment
+    jsPsych.run(tl);
+  </script>
+  
+</html>
